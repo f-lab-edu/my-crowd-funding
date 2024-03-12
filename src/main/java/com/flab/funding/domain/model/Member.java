@@ -5,6 +5,7 @@ import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Builder
 @Getter
@@ -16,7 +17,7 @@ public class Member {
     private String email;
     private String userName;
     private String nickName;
-    private String phoneNum;
+    private String phoneNumber;
     private MemberGender gender;
     private LocalDate birthday;
     private String password;
@@ -26,7 +27,13 @@ public class Member {
 
     public Member activate() {
         this.status = MemberStatus.ACTIVATE;
+        makeKey();
         return this;
+    }
+
+    // TODO key 생성 로직 수정
+    private void makeKey() {
+        this.userKey = UUID.randomUUID().toString();
     }
 
     public Member deactivate() {

@@ -8,11 +8,11 @@ import jakarta.persistence.Converter;
 public class MemberStatusAttributeConverter implements AttributeConverter<MemberStatus, String> {
     @Override
     public String convertToDatabaseColumn(MemberStatus attribute) {
-        return attribute.getStatusCode();
+        return attribute.getCode();
     }
 
     @Override
     public MemberStatus convertToEntityAttribute(String dbData) {
-        return MemberStatus.valueOf(dbData);
+        return MemberStatus.valueOfLabel(dbData);
     }
 }

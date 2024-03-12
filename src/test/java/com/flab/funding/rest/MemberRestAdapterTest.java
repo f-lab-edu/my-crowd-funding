@@ -1,12 +1,15 @@
-package com.flab.funding.member;
+package com.flab.funding.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flab.funding.domain.model.MemberGender;
 import com.flab.funding.domain.model.MemberLinkType;
 import com.flab.funding.infrastructure.adapters.input.data.request.MemberInfoRequest;
 import com.flab.funding.infrastructure.adapters.input.data.request.MemberRegisterRequest;
+import com.flab.funding.infrastructure.adapters.input.data.response.MemberRegisterResponse;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -14,7 +17,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,13 +31,17 @@ import java.time.LocalDate;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(RestDocumentationExtension.class)
 @SpringBootTest
 @Transactional
 @AutoConfigureMockMvc
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class MemberRestAdapterTest {
 
     @Autowired
@@ -39,6 +49,8 @@ public class MemberRestAdapterTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    private String userKey;
 
     @BeforeEach
     void setUp(WebApplicationContext webApplicationContext, RestDocumentationContextProvider restDocumentation) {
@@ -48,6 +60,7 @@ public class MemberRestAdapterTest {
     }
 
     @Test
+    @Rollback(value = false)
     void registerMember() throws Exception {
 
         // given
@@ -56,7 +69,7 @@ public class MemberRestAdapterTest {
                 .email("Test@gmail.com")
                 .userName("홍길순")
                 .nickName("테스터")
-                .phoneNum("010-1111-2222")
+                .phoneNumber("010-1111-2222")
                 .gender(MemberGender.FEMALE)
                 .birthday(LocalDate.of(1998,1,30))
                 .password("")
@@ -64,7 +77,7 @@ public class MemberRestAdapterTest {
 
         // when
         // then
-        this.mockMvc.perform(post("/members")
+        ResultActions resultActions = this.mockMvc.perform(post("/members")
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
@@ -75,7 +88,7 @@ public class MemberRestAdapterTest {
                                 fieldWithPath("email").description("이메일"),
                                 fieldWithPath("userName").description("이름"),
                                 fieldWithPath("nickName").description("닉네임"),
-                                fieldWithPath("phoneNum").description("핸드폰 번호"),
+                                fieldWithPath("phoneNumber").description("핸드폰 번호"),
                                 fieldWithPath("gender").description("성별"),
                                 fieldWithPath("birthday").description("생년월일"),
                                 fieldWithPath("password").description("비밀번호")
@@ -84,13 +97,19 @@ public class MemberRestAdapterTest {
                                 fieldWithPath("userKey").description("회원번호(외부용)"),
                                 fieldWithPath("status").description("회원상태")
                         )));
+
+        MemberRegisterResponse response = objectMapper.readValue(
+                resultActions.andReturn().getResponse().getContentAsString(),
+                MemberRegisterResponse.class);
+
+        userKey = response.getUserKey();
     }
 
     @Test
     void deregisterMember() throws Exception {
         //given
         MemberInfoRequest request = MemberInfoRequest.builder()
-                .userKey("1")
+                .userKey(userKey)
                 .build();
 
         //when
@@ -114,7 +133,7 @@ public class MemberRestAdapterTest {
                                 fieldWithPath("status").description("회원상태"),
                                 fieldWithPath("nickName").description("닉네임"),
                                 fieldWithPath("email").description("이메일"),
-                                fieldWithPath("phoneNum").description("핸드폰 번호"),
+                                fieldWithPath("phoneNumber").description("핸드폰 번호"),
                                 fieldWithPath("linkType").description("계정연동"),
                                 fieldWithPath("lastLoginAt").description("최근 로그인 일자")
                         )));
@@ -124,26 +143,25 @@ public class MemberRestAdapterTest {
     void getMember() throws Exception {
         //given
         MemberInfoRequest request = MemberInfoRequest.builder()
-                .userKey("1")
+                .userKey(userKey)
                 .build();
 
         //when
 
         //then
-        this.mockMvc.perform(get("/members/{userKey}", request.getUserKey())
-                        .content(objectMapper.writeValueAsString(request))
-                        .accept(MediaType.APPLICATION_JSON))
+        this.mockMvc.perform(RestDocumentationRequestBuilders.get("/members/{userKey}"
+                                , request.getUserKey()))
                 .andExpect(status().isOk())
                 .andDo(document("{class-name}/{method-name}",
-                        requestFields(
-                                fieldWithPath("userKey").description("회원번호(외부용)")
+                        pathParameters(
+                                parameterWithName("userKey").description("회원번호(외부용)")
                         ),
                         responseFields(
                                 fieldWithPath("userKey").description("회원번호(외부용)"),
                                 fieldWithPath("status").description("회원상태"),
                                 fieldWithPath("nickName").description("닉네임"),
                                 fieldWithPath("email").description("이메일"),
-                                fieldWithPath("phoneNum").description("핸드폰 번호"),
+                                fieldWithPath("phoneNumber").description("핸드폰 번호"),
                                 fieldWithPath("linkType").description("계정연동"),
                                 fieldWithPath("lastLoginAt").description("최근 로그인 일자")
                         )));

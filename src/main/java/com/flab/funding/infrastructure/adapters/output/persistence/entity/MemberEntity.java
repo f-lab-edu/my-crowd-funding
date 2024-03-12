@@ -10,26 +10,32 @@ import com.flab.funding.infrastructure.adapters.output.persistence.converter.Mem
 import com.flab.funding.infrastructure.adapters.output.persistence.mapper.MemberPersistenceMapper;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
-@Table(name = "user")
+@Table(name = "members")
 public class MemberEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
+    @Column(name = "member_id")
     private Long id;
 
+    @Column(unique = true)
     private String userKey;
 
     @Convert(converter = MemberStatusAttributeConverter.class)
+    @Column(name = "status_code")
     private MemberStatus status;
 
     @Convert(converter = MemberLinkTypeAttributeConverter.class)
@@ -41,7 +47,7 @@ public class MemberEntity {
 
     private String nickName;
 
-    private String phoneNum;
+    private String phoneNumber;
 
     @Convert(converter = GenderAttributeConverter.class)
     private MemberGender gender;
@@ -52,8 +58,10 @@ public class MemberEntity {
 
     private LocalDateTime lastLoginAt;
 
+    @CreatedDate
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     public static MemberEntity from(Member member) {

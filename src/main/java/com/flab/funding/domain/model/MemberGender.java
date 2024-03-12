@@ -1,16 +1,21 @@
 package com.flab.funding.domain.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public enum MemberGender {
     MALE("M"),
     FEMALE("F");
 
     private final String gender;
 
-    MemberGender(String gender) {
-        this.gender = gender;
-    }
-
-    public String getGender() {
-        return gender;
+    public static MemberGender valueOfLabel(String gender) {
+        for (MemberGender memberGender : values()) {
+            if (memberGender.getGender().equalsIgnoreCase(gender))
+                return memberGender;
+        }
+        throw new IllegalArgumentException();
     }
 }

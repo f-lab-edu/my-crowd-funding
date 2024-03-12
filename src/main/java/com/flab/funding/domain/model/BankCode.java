@@ -1,5 +1,10 @@
 package com.flab.funding.domain.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public enum BankCode {
     KOREA("001"),
     KOOKMIN("004"),
@@ -8,11 +13,11 @@ public enum BankCode {
 
     private final String code;
 
-    BankCode(String code) {
-        this.code = code;
-    }
-
-    public String getCode() {
-        return code;
+    public static BankCode valueOfLabel(String code) {
+        for (BankCode bankCode : values()) {
+            if (bankCode.getCode().equalsIgnoreCase(code))
+                return bankCode;
+        }
+        throw new IllegalArgumentException();
     }
 }
